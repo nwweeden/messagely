@@ -48,6 +48,12 @@ describe("Test User class", function () {
     User.updateLoginTimestamp("test");
     let u2 = await User.get("test");
     expect(u2.last_login_at).not.toBe(null);
+
+    //TODO: complete this later
+    // const res = await db.query("UPDATE users SET last_login_at=NULL WHERE username='shhh'");
+    // // let u = await User.get("shhh");
+    // expect(res.statusCode).toEqual(404);
+
   });
 
   test("can get", async function () {

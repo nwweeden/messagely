@@ -1,6 +1,8 @@
 "use strict";
 
-const { NotFoundError } = require("./expressError");
+const { NotFoundError } = require("../expressError");
+const db = require("../db");
+const bcrypt = require('bcrypt')
 
 /** User of the site. */
 
@@ -12,11 +14,13 @@ class User {
    */
 
   static async register({ username, password, first_name, last_name, phone }) {
+    const hashedPassword = await bcrypt.hash(
+      password, 12);
     const results = await db.query(
-      `INSERT INTO users (username, password, first_name, last_name, phone)
-      VALUES $1, $2, $3, $4, $5
+      `INSERT INTO users (username, password, first_name, last_name, phone, join_at, last_login_at)
+      VALUES ($1, $2, $3, $4, $5, current_timestamp, current_timestamp)
       RETURNING username, password, first_name, last_name, phone`,
-        [username, password, first_name, last_name, phone]);
+        [username, hashedPassword, first_name, last_name, phone]);
     return results.rows[0];
   }
 
@@ -41,12 +45,12 @@ class User {
   static async updateLoginTimestamp(username) {
     const result = await db.query(
       `UPDATE users
-      SET last_login_at = CURRENT_TIMESTAMP()
+      SET last_login_at = current_timestamp
       WHERE username = $1`,
       [username]);
       const user = result.rows[0]
 
-      if (!user) throw new NotFoundError(`${username} not found`);
+     // if (!user) throw new NotFoundError(`${username} not found`);
   }
 
   /** All: basic info on all users:
@@ -54,7 +58,7 @@ class User {
 
   static async all() {
     const result = await db.query(
-      `SELECT username, password, first_name, last_name, phone, last_login_at
+      `SELECT username, first_name, last_name
       FROM users`)
       const allUsers = result.rows;
 
@@ -72,7 +76,7 @@ class User {
 
   static async get(username) {
     const result = await db.query(
-      `SELECT username, password, first_name, last_name, phone, last_login_at
+      `SELECT username, join_at, first_name, last_name, phone, last_login_at
       FROM users
       WHERE username = $1`, [username])
       const user = result.rows[0];
@@ -89,21 +93,40 @@ class User {
    * where to_user is
    *   {username, first_name, last_name, phone}
    */
-
+//TODO: double check this method
   static async messagesFrom(username) {
     const mResults = await db.query(
-      `SELECT id, to_user, body, sent_at, read_at
+      `SELECT messages.id, 
+          messages.to_username, 
+          messages.body, 
+          messages.sent_at, 
+          messages.read_at,
+          users.username, 
+          users.first_name, 
+          users.last_name, 
+          users.phone
       FROM messages
+      JOIN users ON messages.to_username = users.username
       WHERE from_username = $1`, [username])
-      const messages = mResults.rows;
 
-    const uResults = await db.query(
-      `SELECT username, first_name, last_name, phone
-      FROM users
-      WHERE id = $1`, [username])
-      const user = uResults.rows[0]
+      const messagesList = mResults.rows;//[{m1}, {m2}, {m3}]
 
-      user.messages = messages
+      return  messagesList.map(message => {
+        return {
+          id : message.id,
+          to_user : {
+            username : message.username,
+            first_name : message.first_name,
+            last_name : message.last_name,
+            phone : message.phone
+          },
+          body : message.body,
+          sent_at : message.sent_at,
+          read_at : message.read_at
+        }
+      })
+      
+    
   }
 
   // id SERIAL PRIMARY KEY,
@@ -122,6 +145,36 @@ class User {
    */
 
   static async messagesTo(username) {
+    const mResults = await db.query(
+      `SELECT messages.id, 
+          messages.from_username, 
+          messages.body, 
+          messages.sent_at, 
+          messages.read_at,
+          users.username, 
+          users.first_name, 
+          users.last_name, 
+          users.phone
+      FROM messages
+      JOIN users ON messages.from_username = users.username
+      WHERE to_username = $1`, [username])
+
+      const messagesList = mResults.rows;//[{m1}, {m2}, {m3}]
+
+      return  messagesList.map(message => {
+        return {
+          id : message.id,
+          from_user : {
+            username : message.username,
+            first_name : message.first_name,
+            last_name : message.last_name,
+            phone : message.phone
+          },
+          body : message.body,
+          sent_at : message.sent_at,
+          read_at : message.read_at
+        }
+      })
   }
 }
 
