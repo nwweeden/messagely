@@ -36,7 +36,6 @@ describe("Auth Routes Test", function () {
           last_name: "Smith",
           phone: "+14150000000"
         });
-
       let token = response.body.token;
       expect(jwt.decode(token)).toEqual({
         username: "bob",

@@ -1,7 +1,7 @@
 "use strict";
 
 const { ensureLoggedIn } = require("../middleware/auth");
-const { UnauthorizedError } = require("../expressError");
+const { UnauthorizedError, BadRequestError } = require("../expressError");
 const  User = require('../models/user')
 const { SECRET_KEY } = require('../config')
 const jwt = require('jsonwebtoken')
@@ -17,13 +17,13 @@ router.post('/login', async function (req, res, next){
     const {username, password} = req.body;  
     const result = await User.authenticate(username, password);
     if(result){
-      
+      User.updateLoginTimestamp(username)
       let payload = { username: username }
       let token = jwt.sign(payload, SECRET_KEY)
-  
+      
       return res.json({ token })
     }
-    throw new UnauthorizedError('Invalid user/password')
+    throw new BadRequestError()
   }
   catch(err){
     return next(err)
@@ -37,13 +37,12 @@ router.post('/login', async function (req, res, next){
  */
 router.post('/register', async function (req, res, next){
   console.log('MADE IT!!')
-  // console.log("REQUEST>BODY", req.body);
   try{
     const {username, password, first_name, last_name, phone} = req.body;
-    const user = await User.register(username, password, first_name, last_name, phone)
-
+    const user = await User.register({username, password, first_name, last_name, phone})
+    User.updateLoginTimestamp(username)
     let payload = { username: user.username }
-    let token = jwt.sign(payload, SECRET_KEY, JWT_OPTIONS)
+    let token = jwt.sign(payload, SECRET_KEY)
 
     return res.json({ token })
   }
@@ -51,5 +50,5 @@ router.post('/register', async function (req, res, next){
     return next(err);
   }
 })
-
+//TODO:update login
 module.exports = router;

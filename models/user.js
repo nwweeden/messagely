@@ -1,6 +1,6 @@
 "use strict";
 
-const { NotFoundError } = require("../expressError");
+const { NotFoundError, BadRequestError } = require("../expressError");
 const db = require("../db");
 const bcrypt = require('bcrypt')
 const { BCRYPT_WORK_FACTOR } = require('../config')
@@ -15,20 +15,20 @@ class User {
    *    {username, password, first_name, last_name, phone}
    */
 
-  static async register( username, password, first_name, last_name, phone ) {
+  static async register( {username, password, first_name, last_name, phone} ) {
     const hashedPassword = await bcrypt.hash(
       password, BCRYPT_WORK_FACTOR);
-    const results = await db.query(
+   
+      const results = await db.query(
       `INSERT INTO users (username, password, first_name, last_name, phone, join_at, last_login_at)
       VALUES ($1, $2, $3, $4, $5, current_timestamp, current_timestamp)
       RETURNING username, password, first_name, last_name, phone`,
         [username, hashedPassword, first_name, last_name, phone]);
-    return results.rows[0];
+       
+        return results.rows[0];
   }
 
   /** Authenticate: is username/password valid? Returns boolean. */
-  // TODO: Should we create the token here?
-  // TODO: Should we throw an error here if a user is not found?
 
   static async authenticate(username, password) {
     const result = await db.query (
@@ -37,13 +37,14 @@ class User {
       WHERE username = $1`, [username]
     );
     const user = result.rows[0];
-
+    
+    if(!user) throw new BadRequestError()
+    
     return await bcrypt.compare(password, user.password) === true;
   }
 
   /** Update last_login_at for user */
-  // TODO: Do we need to include a query to check if the user exists first?
-
+//TODO:work on throwing error
   static async updateLoginTimestamp(username) {
     const result = await db.query(
       `UPDATE users
@@ -52,7 +53,7 @@ class User {
       [username]);
       const user = result.rows[0]
 
-     // if (!user) throw new NotFoundError(`${username} not found`);
+    //  if (!user) throw new NotFoundError(`${username} not found`);
   }
 
   /** All: basic info on all users:
@@ -180,5 +181,5 @@ class User {
   }
 }
 
-
+// await User.register("xyz", "password", "firstName", "lastName", "+14155550000")
 module.exports = User;
