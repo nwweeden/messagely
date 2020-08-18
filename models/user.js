@@ -58,10 +58,11 @@ class User {
 
   /** All: basic info on all users:
    * [{username, first_name, last_name}, ...] */
+  // TODO: Can we return phone too to fullfill user route?
 
   static async all() {
     const result = await db.query(
-      `SELECT username, first_name, last_name
+      `SELECT username, first_name, last_name, phone
       FROM users`)
       const allUsers = result.rows;
 

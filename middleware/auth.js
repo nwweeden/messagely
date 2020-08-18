@@ -11,9 +11,12 @@ const { UnauthorizedError } = require("../expressError");
 /** Middleware: Authenticate user. */
 
 function authenticateJWT(req, res, next) {
+  console.log("PAYLOAD IS", payload);
+
   try {
     const tokenFromBody = req.body._token;
     const payload = jwt.verify(tokenFromBody, SECRET_KEY);
+    console.log("PAYLOAD IS", payload);
     res.locals.user = payload;
     return next();
   } catch (err) {
@@ -25,6 +28,7 @@ function authenticateJWT(req, res, next) {
 /** Middleware: Requires user is authenticated. */
 
 function ensureLoggedIn(req, res, next) {
+  console.log("USERNAME IS", res.locals.user)
   try {
     if (!res.locals.user) {
       throw new UnauthorizedError();
