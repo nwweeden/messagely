@@ -3,6 +3,8 @@
 const { NotFoundError } = require("../expressError");
 const db = require("../db");
 const bcrypt = require('bcrypt')
+const { BCRYPT_WORK_FACTOR } = require('../config')
+
 
 /** User of the site. */
 
@@ -15,7 +17,7 @@ class User {
 
   static async register({ username, password, first_name, last_name, phone }) {
     const hashedPassword = await bcrypt.hash(
-      password, 12);
+      password, BCRYPT_WORK_FACTOR);
     const results = await db.query(
       `INSERT INTO users (username, password, first_name, last_name, phone, join_at, last_login_at)
       VALUES ($1, $2, $3, $4, $5, current_timestamp, current_timestamp)
