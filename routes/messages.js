@@ -40,7 +40,7 @@ router.get('/:id', ensureLoggedIn, async function (req, res, next){
  *   {message: {id, from_username, to_username, body, sent_at}}
  *
  **/
-router.post('/', authenticateJWT, async function (req, res, next){
+router.post('/', ensureLoggedIn, async function (req, res, next){
   try{
     const {to_username, body} = req.body;
     // console.log("USERNAME IS", res.locals.user.username)
@@ -62,11 +62,16 @@ router.post('/', authenticateJWT, async function (req, res, next){
  * Makes sure that the only the intended recipient can mark as read.
  *
  **/
-router.post('/:id/read', ensureCorrectUser, async function (req, res, next){
+router.post('/:id/read',ensureLoggedIn, async function (req, res, next){
   try{
+    let username = res.locals.user.username;
     const id = req.params.id;
+    let msg = await Message.get(id);
+    ssa
+    if (msg.to_user.username !== username) {
+      throw new UnauthorizedError("Cannot set message to read");
+    }
     const result = await Message.markRead(id)
-    
     return res.json({message: result});
   }
   catch(err){

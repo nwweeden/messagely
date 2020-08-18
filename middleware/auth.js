@@ -11,10 +11,12 @@ const { UnauthorizedError } = require("../expressError");
 /** Middleware: Authenticate user. */
 
 function authenticateJWT(req, res, next) {
-  console.log("PAYLOAD IS", payload);
+  // console.log("PAYLOAD IS", payload);
 
   try {
     const tokenFromBody = req.body._token;
+    console.log("TOKEN:", tokenFromBody, SECRET_KEY)
+    console.log("BODY::", req.body)
     const payload = jwt.verify(tokenFromBody, SECRET_KEY);
     console.log("PAYLOAD IS", payload);
     res.locals.user = payload;
